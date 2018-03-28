@@ -166,7 +166,7 @@ def grains():
                 elif address['family'] == 'inet6':
                     DETAILS['grains_cache']['ip6_interfaces'][iface].append(address['address'])
 
-    return {'lxd': DETAILS['grains_cache']
+    return {'lxd': DETAILS['grains_cache']}
 
 
 def cmd(command=[]):
@@ -178,6 +178,7 @@ def cmd(command=[]):
     DETAILS['container'].start()
     ret, out, err = DETAILS['container'].execute(command)
     return out.split('\n')[0]
+
 
 def grains_refresh():
     '''
