@@ -73,7 +73,8 @@ from pylxd.exceptions import *
 __proxyenabled__ = ['lxd']
 __virtualname__ = 'lxd'
 
-DETAILS = { 'grains_cache': {}}
+GRAINS_CACHE = None
+DETAILS = {}
 
 # Want logging!
 log = logging.getLogger(__file__)
@@ -93,6 +94,7 @@ def init(opts=None):
     Required.
     Can be used to initialize the server connection.
     '''
+    log.debug('LXD-Proxy  Init')
 
     if opts == None:
         opts = __opts__
@@ -126,9 +128,10 @@ def grains():
     '''
     Get the grains from the proxied device
     '''
+    log.debug('LXD-Proxy grains()')
 
-    if not DETAILS['grains_cache']:
-        DETAILS['grains_cache'] = {
+    if not GRAINS_CACHE:
+        GRAINS_CACHE = {
                 # Collect information from the container object
                 'virtual':      'lxd',
                 'host':         DETAILS['container'].name,
@@ -145,30 +148,30 @@ def grains():
                 # FIXME not every distro supports lsb_release
                 'os':           sendline('lsb_release -s -i'),
                 'osrelease':    sendline('lsb_release -s -r'),
-                'osfinger':     '%s-%s' % \
-                                    (DETAILS['grains_cache']['os'],
-                                     DETAILS['grains_cache']['osrelease']),
+                'osfinger':     '%s-%s' % (GRAINS_CACHE['os'],
+                                           GRAINS_CACHE['osrelease']),
                 'oscodename':   sendline('lsb_release -s -c'),
         }
 
-        # FIXME this would do better w/ some generator luvin...
-        DETAILS['grains_cache']['ip_interfaces'] = {}
-        DETAILS['grains_cache']['ip4_interfaces'] = {}
-        DETAILS['grains_cache']['ip6_interfaces'] = {}
-        for iface in DETAILS['container'].state().network.keys():
-            DETAILS['grains_cache']['hwaddr_interfaces'] = \
-                { iface, DETAILS['container'].state().network[iface]['hwaddr'] }
-            DETAILS['grains_cache']['ip_interfaces'][iface] = []
-            DETAILS['grains_cache']['ip4_interfaces'][iface] = []
-            DETAILS['grains_cache']['ip6_interfaces'][iface] = []
-            for address in DETAILS['container'].state().network[iface]['addresses']:
-                DETAILS['grains_cache']['ip_interfaces'][iface].append(address['address'])
-                if address['family'] == 'inet':
-                    DETAILS['grains_cache']['ip4_interfaces'][iface].append(address['address'])
-                elif address['family'] == 'inet6':
-                    DETAILS['grains_cache']['ip6_interfaces'][iface].append(address['address'])
+    # FIXME this would do better w/ some generator luvin...
+    GRAINS_CACHE['ip_interfaces'] = {}
+    GRAINS_CACHE['ip4_interfaces'] = {}
+    GRAINS_CACHE['ip6_interfaces'] = {}
 
-    return {'lxd': DETAILS['grains_cache']}
+    for iface in DETAILS['container'].state().network.keys():
+        GRAINS_CACHE['hwaddr_interfaces'] = \
+                { iface, DETAILS['container'].state().network[iface]['hwaddr'] }
+        GRAINS_CACHE['ip_interfaces'][iface] = []
+        GRAINS_CACHE['ip4_interfaces'][iface] = []
+        GRAINS_CACHE['ip6_interfaces'][iface] = []
+        for address in DETAILS['container'].state().network[iface]['addresses']:
+            GRAINS_CACHE['ip_interfaces'][iface].append(address['address'])
+            if address['family'] == 'inet':
+                GRAINS_CACHE['ip4_interfaces'][iface].append(address['address'])
+            elif address['family'] == 'inet6':
+                GRAINS_CACHE['ip6_interfaces'][iface].append(address['address'])
+
+    return {'lxd': GRAINS_CACHE}
 
 
 def execute(command=[]):
@@ -186,6 +189,7 @@ def sendline(command):
     '''
     Run a command line within the container
     '''
+    log.debug('LXD-Proxy sendline(%s)' % command)
     return execute(shlex.split(command))
 
 
@@ -193,7 +197,8 @@ def grains_refresh():
     '''
     Refresh the grains from the proxied device
     '''
-    DETAILS['grains_cache'] = {}
+    log.debug('LXD-Proxy grains_refresh()')
+    GRAINS_CACHE = None
     return grains()
 
 
@@ -202,6 +207,8 @@ def ping():
     Required.
     Ping the device on the other end of the connection
     '''
+    log.debug('LXD-Proxy ping()')
+
     try:
         DETAILS['container'].start()
         if DETAILS['container'].status() == 'Running':
@@ -216,6 +223,7 @@ def shutdown(opts):
     Disconnect
     '''
     # The LXD API is restful and doesn't need shutdown.
+    log.debug('LXD-Proxy shutdown()')
 
 
 def package_list():
