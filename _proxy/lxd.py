@@ -150,8 +150,8 @@ def grains():
         DETAILS['grains_cache']['os'] = stdout.split('\n')[0]
         ret, stdout, stderr = container.execute(['lsb_release', '-s', '-r'])
         DETAILS['grains_cache']['osrelease'] = stdout.split('\n')[0]
-        DETAILS['grains_cache']['osfinger'] = '%s-%s' %
-                (DETAILS['grains_cache']['os'], DETAILS['grains_cache']['osrelease']
+        DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
+                (DETAILS['grains_cache']['os'], DETAILS['grains_cache']['osrelease'])
         ret, stdout, stderr = container.execute(['lsb_release', '-s', '-c'])
         DETAILS['grains_cache']['oscodename'] = stdout.split('\n')[0]
 
