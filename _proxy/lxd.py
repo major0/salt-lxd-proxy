@@ -94,23 +94,30 @@ def init(opts=None):
     Required.
     Can be used to initialize the server connection.
     '''
-    log.debug('LXD-Proxy  Init')
+    log.debug('LXD-Proxy Init')
 
     if opts == None:
         opts = __opts__
     try:
+        log.debug('LXD-Proxy Init: endpoint=%s, cert=%s, key=%s' % \
+                (opts['proxy']['url'],
+                 opts['proxy']['cert'],
+                 opts['proxy']['key'])
         DETAILS['server'] = Client(endpoint=opts['proxy']['url'],
                                    cert=(opts['proxy']['cert'],
                                          opts['proxy']['key']),
                                    verify=opts['proxy']['verify'])
         if not DETAILS['server'].trusted:
+            log.debug("LXD-Proxy Init: authenticate password='%s'" % \
+                    opts['proxy']['password'])
             DETAILS['server'].authenticate(opts['proxy']['password'])
         DETAILS['container'] = DETAILS['server'].get(opts['proxy']['name'])
-
     except (LXDAPIException, ClientConnectionFailed) as e:
+        log.debug('LXD Init Failed')
         log.error(e)
         return False
 
+    log.debug('LXD Init Success')
     DETAILS['initialized'] = True
     return True
 
