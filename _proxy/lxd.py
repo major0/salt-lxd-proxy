@@ -77,8 +77,6 @@ DETAILS = { 'grains_cache': {}}
 log = logging.getLogger(__file__)
 
 
-# This does nothing, it's here just as an example and to provide a log
-# entry when the module is loaded.
 def __virtual__():
     '''
     Only return if all the modules are available
@@ -91,19 +89,19 @@ def __virtual__():
 def init(opts=None):
     '''
     Required.
-    Can be used to initialize the client connection.
+    Can be used to initialize the server connection.
     '''
 
     if opts == None:
         opts = __opts__
     try:
-        DETAILS['client'] = Client(endpoint=__opts__['proxy']['url'],
-                                                cert=(__opts__['proxy']['cert'],
-                                                      __opts__['proxy']['key']),
-                                                verify=__opts__['proxy']['verify'])
-        if not DETAILS['client'].trusted:
-            DETAILS['client'].authenticate(__opts__['proxy']['password'])
-        DETAILS['container'] = DETAILS['client'].get(__opts__['proxy']['name'])
+        DETAILS['server'] = Client(endpoint=opts['proxy']['url'],
+                                   cert=(opts['proxy']['cert'],
+                                         opts['proxy']['key']),
+                                   verify=opts['proxy']['verify'])
+        if not DETAILS['server'].trusted:
+            DETAILS['server'].authenticate(opts['proxy']['password'])
+        DETAILS['container'] = DETAILS['server'].get(opts['proxy']['name'])
 
     except (LXDAPIException, ClientConnectionFailed) as e:
         log.error(e)
@@ -128,36 +126,28 @@ def grains():
     '''
 
     if not DETAILS['grains_cache']:
-        ##
-        # Collect information from the container object
-        DETAILS['grains_cache']['virtual'] = 'lxd'
-        DETAILS['grains_cache']['host'] = DETAILS['container'].name
-        DETAILS['grains_cache']['localhost'] = DETAILS['container'].name
-        DETAILS['grains_cache']['cpuarch'] = DETAILS['container'].architecture
-        DETAILS['grains_cache']['uid'] = 0
+        DETAILS['grains_cache'] = {
+                # Collect information from the container object
+                'virtual':      'lxd',
+                'host':         DETAILS['container'].name,
+                'localhost':    DETAILS['container'].name,
+                'cpuarch':      DETAILS['container'].architecture,
+                'uid':          0,
 
-        ##
-        # Collect information from w/in the container
-        # FIXME wrap up container.execute() to something a bit less messy.
-        DETAILS['container'].start()
-        ret, stdout, stderr = DETAILS['container'].execute(['id', '-un'])
-        DETAILS['grains_cache']['username'] = stdout.split('\n')[0]
-        ret, stdout, stderr = DETAILS['container'].execute(['id', '-u'])
-        DETAILS['grains_cache']['uid'] = stdout.split('\n')[0]
-        ret, stdout, stderr = DETAILS['container'].execute(['id', '-gn'])
-        DETAILS['grains_cache']['groupname'] = stdout.split('\n')[0]
-        ret, stdout, stderr = DETAILS['container'].execute(['id', '-g'])
-        DETAILS['grains_cache']['gid'] = stdout.split('\n')[0]
+                # Collect information from w/in the container
+                'username':     cmd(['id', '-un']),
+                'uid':          cmd(['id', '-u']),
+                'groupname':    cmd(['id', '-gn']),
+                'gid':          cmd(['id', '-g']),
 
-        # FIXME not every distro supports lsb_release
-        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-i'])
-        DETAILS['grains_cache']['os'] = stdout.split('\n')[0]
-        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-r'])
-        DETAILS['grains_cache']['osrelease'] = stdout.split('\n')[0]
-        DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
-                (DETAILS['grains_cache']['os'], DETAILS['grains_cache']['osrelease'])
-        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-c'])
-        DETAILS['grains_cache']['oscodename'] = stdout.split('\n')[0]
+                # FIXME not every distro supports lsb_release
+                'os':           cmd(['lsb_release', '-s', '-i']),
+                'osrelease':    cmd(['lsb_release', '-s', '-r']),
+                'osfinger':     '%s-%s' % \
+                                    (DETAILS['grains_cache']['os'],
+                                     DETAILS['grains_cache']['osrelease']),
+                'oscodename':   cmd(['lsb_release', '-s', '-c']),
+        }
 
         # FIXME this would do better w/ some generator luvin...
         DETAILS['grains_cache']['ip_interfaces'] = {}
@@ -176,8 +166,18 @@ def grains():
                 elif address['family'] == 'inet6':
                     DETAILS['grains_cache']['ip6_interfaces'][iface].append(address['address'])
 
-    return DETAILS['grains_cache']
+    return {'lxd': DETAILS['grains_cache']
 
+
+def cmd(command=[]):
+    '''
+    Run a command within the container
+    '''
+    if ping() is False:
+        init()
+    DETAILS['container'].start()
+    ret, out, err = DETAILS['container'].execute(command)
+    return out.split('\n')[0]
 
 def grains_refresh():
     '''
@@ -187,17 +187,13 @@ def grains_refresh():
     return grains()
 
 
-def fns():
-    return {'details': 'This key is here because a function in '
-            'grains/ssh_sample.py called fns() here in the proxymodule.'}
-
-
 def ping():
     '''
     Required.
     Ping the device on the other end of the connection
     '''
     try:
+        DETAILS['container'].start()
         if DETAILS['container'].status() == 'Running':
             return True
     except ClientConnectionFailed as e:
