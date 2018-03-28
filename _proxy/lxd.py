@@ -27,8 +27,8 @@ connection, at which point the server will automatically trust the client's
 certs.
 
 .. code-block:: shell
-    openssl req -newkey rsa:2048 -nodes -keyout lxd.key -out lxd-client.csr
-    openssl x509 -signkey lxd.key -in lxd.csr -req -days 365 -out lxd-client.crt
+    openssl req -newkey rsa:2048 -nodes -keyout lxd-client.key -out lxd-client.csr
+    openssl x509 -signkey lxd-client.key -in lxd-client.csr -req -days 365 -out lxd-client.crt
 .. versionadded:: 2018.03.24
 
 The lxd proxy configuration requires a 'url' property (the LXD https address),
