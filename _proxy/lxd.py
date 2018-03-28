@@ -85,7 +85,7 @@ def __virtual__():
     '''
     log.info('lxd proxy __virtual__() called...')
 
-    return __virtalname__
+    return __virtualname__
 
 
 def init(opts=None):
