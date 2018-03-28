@@ -64,12 +64,14 @@ from __future__ import absolute_import, print_function, unicode_literals
 import logging
 
 # Import LXD Libs
-import pylxd
+from pylxd.client import Client
+from pylxd.exceptions import *
 
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
+__virtualname__ = 'lxd'
 
-DETAILS = {}
+DETAILS = { 'grains_cache': {}}
 
 # Want logging!
 log = logging.getLogger(__file__)
@@ -83,29 +85,32 @@ def __virtual__():
     '''
     log.info('lxd proxy __virtual__() called...')
 
-    return True
+    return __virtalname__
 
 
-def init(opts):
+def init(opts=None):
     '''
     Required.
     Can be used to initialize the client connection.
     '''
 
+    if opts == None:
+        opts = __opts__
     try:
-        DETAILS['client'] = pylxd.client.Client(endpoint=__opts__['proxy']['url'],
+        DETAILS['client'] = Client(endpoint=__opts__['proxy']['url'],
                                                 cert=(__opts__['proxy']['cert'],
                                                       __opts__['proxy']['key']),
                                                 verify=__opts__['proxy']['verify'])
         if not DETAILS['client'].trusted:
             DETAILS['client'].authenticate(__opts__['proxy']['password'])
         DETAILS['container'] = DETAILS['client'].get(__opts__['proxy']['name'])
-        DETAILS['initialized'] = True
-        return True
-    except pylxd.exceptions.LXDAPIException as e:
+
+    except (LXDAPIException, ClientConnectionFailed) as e:
+        log.error(e)
         return False
-    except pylxd.exceptions.ClientConnectionFailed as e:
-        return False
+
+    DETAILS['initialized'] = True
+    return True
 
 
 def initialized():
@@ -122,49 +127,49 @@ def grains():
     Get the grains from the proxied device
     '''
 
-    if not DETAILS.get('grains_cache', {}):
+    if not DETAILS['grains_cache']:
         ##
         # Collect information from the container object
-        DETAILS['grains_cache']['virtual'] = 'container'
-        DETAILS['grains_cache']['host'] = container.name
-        DETAILS['grains_cache']['nodename'] = container.name
-        DETAILS['grains_cache']['localhost'] = container.name
+        DETAILS['grains_cache']['virtual'] = 'lxd'
+        DETAILS['grains_cache']['host'] = DETAILS['container'].name
+        DETAILS['grains_cache']['localhost'] = DETAILS['container'].name
         DETAILS['grains_cache']['cpuarch'] = DETAILS['container'].architecture
         DETAILS['grains_cache']['uid'] = 0
 
         ##
         # Collect information from w/in the container
-        container.start()
-        ret, stdout, stderr = container.execute(['id', '-un'])
+        # FIXME wrap up container.execute() to something a bit less messy.
+        DETAILS['container'].start()
+        ret, stdout, stderr = DETAILS['container'].execute(['id', '-un'])
         DETAILS['grains_cache']['username'] = stdout.split('\n')[0]
-        ret, stdout, stderr = container.execute(['id', '-u'])
+        ret, stdout, stderr = DETAILS['container'].execute(['id', '-u'])
         DETAILS['grains_cache']['uid'] = stdout.split('\n')[0]
-        ret, stdout, stderr = container.execute(['id', '-gn'])
+        ret, stdout, stderr = DETAILS['container'].execute(['id', '-gn'])
         DETAILS['grains_cache']['groupname'] = stdout.split('\n')[0]
-        ret, stdout, stderr = container.execute(['id', '-g'])
+        ret, stdout, stderr = DETAILS['container'].execute(['id', '-g'])
         DETAILS['grains_cache']['gid'] = stdout.split('\n')[0]
 
         # FIXME not every distro supports lsb_release
-        ret, stdout, stderr = container.execute(['lsb_release', '-s', '-i'])
+        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-i'])
         DETAILS['grains_cache']['os'] = stdout.split('\n')[0]
-        ret, stdout, stderr = container.execute(['lsb_release', '-s', '-r'])
+        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-r'])
         DETAILS['grains_cache']['osrelease'] = stdout.split('\n')[0]
         DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
                 (DETAILS['grains_cache']['os'], DETAILS['grains_cache']['osrelease'])
-        ret, stdout, stderr = container.execute(['lsb_release', '-s', '-c'])
+        ret, stdout, stderr = DETAILS['container'].execute(['lsb_release', '-s', '-c'])
         DETAILS['grains_cache']['oscodename'] = stdout.split('\n')[0]
 
         # FIXME this would do better w/ some generator luvin...
         DETAILS['grains_cache']['ip_interfaces'] = {}
         DETAILS['grains_cache']['ip4_interfaces'] = {}
         DETAILS['grains_cache']['ip6_interfaces'] = {}
-        for iface in container.state().network.keys():
+        for iface in DETAILS['container'].state().network.keys():
             DETAILS['grains_cache']['hwaddr_interfaces'] = \
-                { iface, container.state().network[iface]['hwaddr'] }
+                { iface, DETAILS['container'].state().network[iface]['hwaddr'] }
             DETAILS['grains_cache']['ip_interfaces'][iface] = []
             DETAILS['grains_cache']['ip4_interfaces'][iface] = []
             DETAILS['grains_cache']['ip6_interfaces'][iface] = []
-            for address in container.state().network[iface]['addresses']:
+            for address in DETAILS['container'].state().network[iface]['addresses']:
                 DETAILS['grains_cache']['ip_interfaces'][iface].append(address['address'])
                 if address['family'] == 'inet':
                     DETAILS['grains_cache']['ip4_interfaces'][iface].append(address['address'])
@@ -178,7 +183,7 @@ def grains_refresh():
     '''
     Refresh the grains from the proxied device
     '''
-    DETAILS['grains_cache'] = None
+    DETAILS['grains_cache'] = {}
     return grains()
 
 
@@ -195,7 +200,7 @@ def ping():
     try:
         if DETAILS['container'].status() == 'Running':
             return True
-    except pylxd.exceptions.ClientConnectionFailed as e:
+    except ClientConnectionFailed as e:
         log.error(e)
     return False
 
