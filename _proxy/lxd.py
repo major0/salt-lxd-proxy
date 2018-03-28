@@ -63,9 +63,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 # Import python libs
 import logging
 
-# Import Salt libs
-import salt.utils.json
-
 # Import LXD Libs
 import pylxd
 
