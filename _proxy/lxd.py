@@ -98,11 +98,12 @@ def init(opts):
                                                       __opts__['proxy']['key']),
                                                 verify=__opts__['proxy']['verify'])
         if not DETAILS['client'].trusted:
-            log.debug("LXD: password='%s'" % __opts__['proxy']['password'])
             DETAILS['client'].authenticate(__opts__['proxy']['password'])
         DETAILS['container'] = DETAILS['client'].get(__opts__['proxy']['name'])
         DETAILS['initialized'] = True
         return True
+    except pylxd.exceptions.LXDAPIException as e:
+        return False
     except pylxd.exceptions.ClientConnectionFailed as e:
         return False
 
