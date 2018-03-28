@@ -17,6 +17,7 @@ Dependancies
 ------------
 
 - pylxd: http://pylxd.readthedocs.io/en/latest/installation.html
+- shlex
 
 Pillar
 ------
@@ -62,6 +63,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 # Import python libs
 import logging
+import shlex
 
 # Import LXD Libs
 from pylxd.client import Client
@@ -135,18 +137,18 @@ def grains():
                 'uid':          0,
 
                 # Collect information from w/in the container
-                'username':     cmd(['id', '-un']),
-                'uid':          cmd(['id', '-u']),
-                'groupname':    cmd(['id', '-gn']),
-                'gid':          cmd(['id', '-g']),
+                'username':     sendline('id -un'),
+                'uid':          sendline('id', '-u'),
+                'groupname':    sendline('id', '-gn'),
+                'gid':          sendline('id', '-g'),
 
                 # FIXME not every distro supports lsb_release
-                'os':           cmd(['lsb_release', '-s', '-i']),
-                'osrelease':    cmd(['lsb_release', '-s', '-r']),
+                'os':           sendline('lsb_release -s -i'),
+                'osrelease':    sendline('lsb_release -s -r'),
                 'osfinger':     '%s-%s' % \
                                     (DETAILS['grains_cache']['os'],
                                      DETAILS['grains_cache']['osrelease']),
-                'oscodename':   cmd(['lsb_release', '-s', '-c']),
+                'oscodename':   sendline('lsb_release -s -c']),
         }
 
         # FIXME this would do better w/ some generator luvin...
@@ -169,7 +171,7 @@ def grains():
     return {'lxd': DETAILS['grains_cache']}
 
 
-def cmd(command=[]):
+def execute(command=[]):
     '''
     Run a command within the container
     '''
@@ -178,6 +180,13 @@ def cmd(command=[]):
     DETAILS['container'].start()
     ret, out, err = DETAILS['container'].execute(command)
     return out.split('\n')[0]
+
+
+def sendline(command):
+    '''
+    Run a command line within the container
+    '''
+    return execute(shlex.split(command))
 
 
 def grains_refresh():
