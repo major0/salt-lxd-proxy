@@ -98,7 +98,7 @@ def init(opts):
                                                       __opts__['proxy']['key']),
                                                 verify=__opts__['proxy']['verify'])
         if not DETAILS['client'].trusted:
-            log.debug("LXD: password='%s'" % DETAILS['client'].authenticate(__opts__['proxy']['password']))
+            log.debug("LXD: password='%s'" % __opts__['proxy']['password'])
             DETAILS['client'].authenticate(__opts__['proxy']['password'])
         DETAILS['container'] = DETAILS['client'].get(__opts__['proxy']['name'])
         DETAILS['initialized'] = True
