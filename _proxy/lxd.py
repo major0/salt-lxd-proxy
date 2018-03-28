@@ -102,7 +102,7 @@ def init(opts=None):
         log.debug('LXD-Proxy Init: endpoint=%s, cert=%s, key=%s' % \
                 (opts['proxy']['url'],
                  opts['proxy']['cert'],
-                 opts['proxy']['key'])
+                 opts['proxy']['key']))
         DETAILS['server'] = Client(endpoint=opts['proxy']['url'],
                                    cert=(opts['proxy']['cert'],
                                          opts['proxy']['key']),
