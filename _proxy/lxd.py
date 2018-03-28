@@ -148,7 +148,7 @@ def grains():
                 'osfinger':     '%s-%s' % \
                                     (DETAILS['grains_cache']['os'],
                                      DETAILS['grains_cache']['osrelease']),
-                'oscodename':   sendline('lsb_release -s -c']),
+                'oscodename':   sendline('lsb_release -s -c'),
         }
 
         # FIXME this would do better w/ some generator luvin...
