@@ -102,7 +102,7 @@ def init(opts):
         DETAILS['container'] = DETAILS['client'].get(__opts__['proxy']['name'])
         DETAILS['initialized'] = True
         return True
-    except ClientConnectionFailed as e:
+    except pylxd.exceptions.ClientConnectionFailed as e:
         return False
 
 
@@ -193,7 +193,7 @@ def ping():
     try:
         if DETAILS['container'].status() == 'Running':
             return True
-    except ClientConnectionFailed as e:
+    except pylxd.exceptions.ClientConnectionFailed as e:
         log.error(e)
     return False
 
