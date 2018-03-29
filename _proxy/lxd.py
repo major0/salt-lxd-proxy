@@ -98,8 +98,10 @@ def init(opts=None):
 
     if opts == None:
         opts = __opts__
+
     try:
-        log.debug('LXD-Proxy Init: endpoint=%s, cert=%s, key=%s' % \
+        log.debug("LXD-Proxy Init: " \
+                "Client(endpoint='%s', cert='%s', key='%s')" % \
                 (opts['proxy']['url'],
                  opts['proxy']['cert'],
                  opts['proxy']['key']))
@@ -107,17 +109,27 @@ def init(opts=None):
                                    cert=(opts['proxy']['cert'],
                                          opts['proxy']['key']),
                                    verify=opts['proxy']['verify'])
-        if not DETAILS['server'].trusted:
-            log.debug("LXD-Proxy Init: authenticate password='%s'" % \
-                    opts['proxy']['password'])
+    except ClientConnectionFailed as e:
+        log.debug('LXD-Proxy Init: Client() failed')
+        return False
+
+    if not DETAILS['server'].trusted:
+        # Don't log the password
+        try:
             DETAILS['server'].authenticate(opts['proxy']['password'])
+        except LXDAPIException as e:
+            log.debug('LXD-Proxy Init: authenticate() failed')
+            return False
+
+    try:
+        log.debug('LXD-Proxy Init: container.get(name=%s)' % opts['proxy']['name'])
         DETAILS['container'] = DETAILS['server'].containers.get(opts['proxy']['name'])
-    except (LXDAPIException, ClientConnectionFailed) as e:
-        log.debug('LXD Init Failed')
+    except LXDAPIException as e:
+        log.debug('LXD-Proxy Init: container.get() failed')
         log.error(e)
         return False
 
-    log.debug('LXD Init Success')
+    log.debug('LXD-Proxy Init: Success')
     DETAILS['initialized'] = True
     return True
 
