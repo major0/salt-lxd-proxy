@@ -168,8 +168,10 @@ def grains():
                 'oscodename':   sendline('lsb_release -s -c'),
         }
         DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
-                       (DETAILS['grains_cache']['os'],
-                        DETAILS['grains_cache']['osrelease'])
+                (DETAILS['grains_cache']['os'],
+                 DETAILS['grains_cache']['osrelease'])
+        DETAILS['grains_cache']['osrelease_info'] = \
+                DETAILS['grains_cache']['osrelease'].split('.')
 
     # FIXME this would do better w/ some generator luvin...
     DETAILS['grains_cache']['ip_interfaces'] = {}
