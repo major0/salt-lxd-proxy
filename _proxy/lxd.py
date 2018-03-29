@@ -72,9 +72,7 @@ from pylxd.exceptions import *
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
 __virtualname__ = 'lxd'
-
-GRAINS_CACHE = {}
-DETAILS = {}
+DETAILS = {'grains_cache': {}}
 
 # Want logging!
 log = logging.getLogger(__file__)
@@ -148,8 +146,8 @@ def grains():
     '''
     log.debug('LXD-Proxy grains()')
 
-    if not GRAINS_CACHE:
-        GRAINS_CACHE = {
+    if not DETAILS['grains_cache']:
+        DETAILS['grains_cache'] = {
                 # Collect information from the container object
                 'virtual':      'lxd',
                 'host':         DETAILS['container'].name,
@@ -168,28 +166,29 @@ def grains():
                 'osrelease':    sendline('lsb_release -s -r'),
                 'oscodename':   sendline('lsb_release -s -c'),
         }
-        GRAINS_CACHE['osfinger'] = '%s-%s' % (GRAINS_CACHE['os'],
-                                              GRAINS_CACHE['osrelease'])
+        DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
+                       (DETAILS['grains_cache']['os'],
+                        DETAILS['grains_cache']['osrelease'])
 
     # FIXME this would do better w/ some generator luvin...
-    GRAINS_CACHE['ip_interfaces'] = {}
-    GRAINS_CACHE['ip4_interfaces'] = {}
-    GRAINS_CACHE['ip6_interfaces'] = {}
+    DETAILS['grains_cache']['ip_interfaces'] = {}
+    DETAILS['grains_cache']['ip4_interfaces'] = {}
+    DETAILS['grains_cache']['ip6_interfaces'] = {}
 
     for iface in DETAILS['container'].state().network.keys():
-        GRAINS_CACHE['hwaddr_interfaces'] = \
+        DETAILS['grains_cache']['hwaddr_interfaces'] = \
                 { iface, DETAILS['container'].state().network[iface]['hwaddr'] }
-        GRAINS_CACHE['ip_interfaces'][iface] = []
-        GRAINS_CACHE['ip4_interfaces'][iface] = []
-        GRAINS_CACHE['ip6_interfaces'][iface] = []
+        DETAILS['grains_cache']['ip_interfaces'][iface] = []
+        DETAILS['grains_cache']['ip4_interfaces'][iface] = []
+        DETAILS['grains_cache']['ip6_interfaces'][iface] = []
         for address in DETAILS['container'].state().network[iface]['addresses']:
-            GRAINS_CACHE['ip_interfaces'][iface].append(address['address'])
+            DETAILS['grains_cache']['ip_interfaces'][iface].append(address['address'])
             if address['family'] == 'inet':
-                GRAINS_CACHE['ip4_interfaces'][iface].append(address['address'])
+                DETAILS['grains_cache']['ip4_interfaces'][iface].append(address['address'])
             elif address['family'] == 'inet6':
-                GRAINS_CACHE['ip6_interfaces'][iface].append(address['address'])
+                DETAILS['grains_cache']['ip6_interfaces'][iface].append(address['address'])
 
-    return {'lxd': GRAINS_CACHE}
+    return {'lxd': DETAILS['grains_cache']}
 
 
 def execute(command=[]):
@@ -216,7 +215,7 @@ def grains_refresh():
     Refresh the grains from the proxied device
     '''
     log.debug('LXD-Proxy grains_refresh()')
-    GRAINS_CACHE = {}
+    DETAILS['grains_cache'] = {}
     return grains()
 
 
