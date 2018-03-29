@@ -42,7 +42,7 @@ def cmd(command, *args, **kwargs):
     proxy_cmd = '.'.join([proxy_prefix, command])
     if proxy_cmd not in __proxy__: # pylint: disable=locally-disabled, undefined-variable
         return False
-    for k in kwargs:
+    for k in list(kwargs):
         if k.startswith('__pub_'):
             kwargs.pop(k)
     return __proxy__[proxy_cmd](*args, **kwargs) # pylint: disable=locally-disabled, undefined-variable
