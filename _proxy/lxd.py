@@ -228,7 +228,7 @@ def ping():
 
     try:
         DETAILS['container'].start()
-        if DETAILS['container'].status() == 'Running':
+        if DETAILS['container'].status == 'Running':
             return True
     except ClientConnectionFailed as e:
         log.error(e)
