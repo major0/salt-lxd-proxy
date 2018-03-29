@@ -172,6 +172,8 @@ def grains():
                  DETAILS['grains_cache']['osrelease'])
         DETAILS['grains_cache']['osrelease_info'] = \
                 DETAILS['grains_cache']['osrelease'].split('.')
+        DETAILS['grains_cache']['osmajorrelease'] = \
+                DETAILS['grains_cache']['osrelease_info'][0]
 
     # FIXME this would do better w/ some generator luvin...
     DETAILS['grains_cache']['ip_interfaces'] = {}
