@@ -73,7 +73,7 @@ from pylxd.exceptions import *
 __proxyenabled__ = ['lxd']
 __virtualname__ = 'lxd'
 
-GRAINS_CACHE = None
+GRAINS_CACHE = {}
 DETAILS = {}
 
 # Want logging!
@@ -216,7 +216,7 @@ def grains_refresh():
     Refresh the grains from the proxied device
     '''
     log.debug('LXD-Proxy grains_refresh()')
-    GRAINS_CACHE = None
+    GRAINS_CACHE = {}
     return grains()
 
 
