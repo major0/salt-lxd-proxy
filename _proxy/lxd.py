@@ -228,7 +228,6 @@ def ping():
     log.debug('LXD-Proxy ping()')
 
     try:
-        DETAILS['container'].start()
         if DETAILS['container'].status == 'Running':
             return True
     except ClientConnectionFailed as e:
