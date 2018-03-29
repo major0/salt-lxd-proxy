@@ -67,7 +67,11 @@ import shlex
 
 # Import LXD Libs
 from pylxd.client import Client
-from pylxd.exceptions import ClientConnectionFailed, LXDAPIException
+try:
+    from pylxd.exceptions import ClientConnectionFailed, LXDAPIException, NotFound
+except ImportError:
+    from pylxd.exceptions import ClientConnectionFailed, LXDAPIException
+    NotFound = LXDAPIException
 
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
@@ -190,7 +194,7 @@ def grains():
             DETAILS['grains_cache']['osmajorrelease'] = \
                     DETAILS['grains_cache']['osrelease_info'][0]
 
-        except LXDAPIException:
+        except NotFound:
             log.error('Unsupported Linux distribution')
 
     # this would do better w/ some generator luvin...
@@ -225,8 +229,9 @@ def execute(command):
         _, out, _ = DETAILS['container'].execute(command)
     except TypeError:
         return None
-    except LXDAPIException:
-        # Restart the connection and try again
+    except NotFound:
+        # This is a work-around for a race-condition in the LXC library that
+        # can be hit w/ any command that takes more than 5 seconds to run.
         DETAILS['container'].start()
         _, out, _ = DETAILS['container'].execute(command)
     return out.split('\n')[0]
