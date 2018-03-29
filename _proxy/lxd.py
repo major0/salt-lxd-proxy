@@ -111,7 +111,7 @@ def init(opts=None):
             log.debug("LXD-Proxy Init: authenticate password='%s'" % \
                     opts['proxy']['password'])
             DETAILS['server'].authenticate(opts['proxy']['password'])
-        DETAILS['container'] = DETAILS['server'].get(opts['proxy']['name'])
+        DETAILS['container'] = DETAILS['server'].containers.get(opts['proxy']['name'])
     except (LXDAPIException, ClientConnectionFailed) as e:
         log.debug('LXD Init Failed')
         log.error(e)
