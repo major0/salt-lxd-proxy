@@ -145,24 +145,23 @@ def grains():
     Get the grains from the proxied device
     '''
     log.debug('LXD-Proxy grains()')
-    DETAILS['container'].start()
 
     if not DETAILS['grains_cache']:
+        DETAILS['container'].start()
         DETAILS['grains_cache'] = {
                 # Collect information from the container object
                 'virtual':      'lxd',
                 'host':         DETAILS['container'].name,
                 'localhost':    DETAILS['container'].name,
-                'cpuarch':      DETAILS['container'].architecture,
-                'uid':          0,
+                #'cpuarch':      DETAILS['container'].architecture,
 
-                # Collect information from w/in the container
-                'username':     sendline('id -un'),
-                'uid':          sendline('id -u'),
-                'groupname':    sendline('id -gn'),
-                'gid':          sendline('id -g'),
+                # No need to query this stuff..
+                'username': 'root', 'uid': 0,
+                'groupname': 'root', 'gid': 0,
 
-                # FIXME not every distro supports lsb_release
+                # FIXME not every distro supports lsb_release, and calling
+                # lsb_release multiple times is fairly slow... may be better to
+                # parse os-release and lsb-release, should they exist.
                 'os':           sendline('lsb_release -s -i'),
                 'osrelease':    sendline('lsb_release -s -r'),
                 'oscodename':   sendline('lsb_release -s -c'),
