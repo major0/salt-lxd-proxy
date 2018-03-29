@@ -203,7 +203,7 @@ def execute(command=[]):
         ret, out, err = DETAILS['container'].execute(command)
     except NotFound:
         # Restart the connection and try again
-        DETAILS['container').start()
+        DETAILS['container'].start()
         ret, out, err = DETAILS['container'].execute(command)
     return out.split('\n')[0]
 
