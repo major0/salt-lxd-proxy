@@ -178,7 +178,7 @@ def grains():
 
     for iface in DETAILS['container'].state().network.keys():
         DETAILS['grains_cache']['hwaddr_interfaces'] = \
-                { iface, DETAILS['container'].state().network[iface]['hwaddr'] }
+                { iface: DETAILS['container'].state().network[iface]['hwaddr'] }
         DETAILS['grains_cache']['ip_interfaces'][iface] = []
         DETAILS['grains_cache']['ip4_interfaces'][iface] = []
         DETAILS['grains_cache']['ip6_interfaces'][iface] = []
