@@ -59,9 +59,9 @@ server.
 
 .. versionadded:: 2018.03.24
 '''
-from __future__ import absolute_import, print_function, unicode_literals
 
-# Import python libs
+# Import Python libs
+from __future__ import absolute_import, print_function, unicode_literals
 import logging
 import shlex
 
@@ -73,13 +73,14 @@ except ImportError:
     from pylxd.exceptions import ClientConnectionFailed, LXDAPIException
     NotFound = LXDAPIException
 
+# Want logging!
+log = logging.getLogger(__file__) # pylint: disable=locally-disabled, invalid-name
+
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
 __virtualname__ = 'lxd'
 DETAILS = {'grains_cache': {}}
 
-# Want logging!
-log = logging.getLogger(__file__) # pylint: disable=locally-disabled, invalid-name
 
 def __virtual__():
     '''
@@ -143,6 +144,44 @@ def initialized():
     our init() function has been called
     '''
     return DETAILS.get('initialized', False)
+
+
+def ping():
+    '''
+    Ping the device on the other end of the connection
+    '''
+    log.debug('LXD-Proxy ping()')
+
+    if DETAILS['container'].status == 'Running':
+        return True
+    return False
+
+
+
+def shutdown(_=None):
+    '''
+    Disconnect
+    '''
+    # The LXD API is restful and doesn't need shutdown.
+    log.debug('LXD-Proxy shutdown()')
+
+
+def sendline(command):
+    '''
+    Run a command within the container
+    '''
+    if ping() is False:
+        init()
+        DETAILS['container'].start()
+    try:
+        _, out, _ = DETAILS['container'].execute(shlex.split(command))
+        return None
+    except NotFound:
+        # This is a work-around for a race-condition in the LXC library that
+        # can be hit w/ any command that takes more than 5 seconds to run.
+        DETAILS['container'].start()
+        _, out, _ = DETAILS['container'].execute(shlex.split(command))
+    return out.split('\n')[0]
 
 
 def grains():
@@ -218,33 +257,6 @@ def grains():
     return DETAILS['grains_cache']
 
 
-def execute(command):
-    '''
-    Run a command within the container
-    '''
-    if ping() is False:
-        init()
-        DETAILS['container'].start()
-    try:
-        _, out, _ = DETAILS['container'].execute(command)
-    except TypeError:
-        return None
-    except NotFound:
-        # This is a work-around for a race-condition in the LXC library that
-        # can be hit w/ any command that takes more than 5 seconds to run.
-        DETAILS['container'].start()
-        _, out, _ = DETAILS['container'].execute(command)
-    return out.split('\n')[0]
-
-
-def sendline(command):
-    '''
-    Run a command line within the container
-    '''
-    log.debug('LXD-Proxy sendline(' + command + ')')
-    return execute(shlex.split(command))
-
-
 def grains_refresh():
     '''
     Refresh the grains from the proxied device
@@ -252,26 +264,6 @@ def grains_refresh():
     log.debug('LXD-Proxy grains_refresh()')
     DETAILS['grains_cache'] = {}
     return grains()
-
-
-def ping():
-    '''
-    Required.
-    Ping the device on the other end of the connection
-    '''
-    log.debug('LXD-Proxy ping()')
-
-    if DETAILS['container'].status == 'Running':
-        return True
-    return False
-
-
-def shutdown(_=None):
-    '''
-    Disconnect
-    '''
-    # The LXD API is restful and doesn't need shutdown.
-    log.debug('LXD-Proxy shutdown()')
 
 
 def package_list():
