@@ -157,9 +157,9 @@ def grains():
 
                 # Collect information from w/in the container
                 'username':     sendline('id -un'),
-                'uid':          sendline('id', '-u'),
-                'groupname':    sendline('id', '-gn'),
-                'gid':          sendline('id', '-g'),
+                'uid':          sendline('id -u'),
+                'groupname':    sendline('id -gn'),
+                'gid':          sendline('id -g'),
 
                 # FIXME not every distro supports lsb_release
                 'os':           sendline('lsb_release -s -i'),
