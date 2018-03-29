@@ -169,7 +169,7 @@ def grains():
                 DETAILS['grains_cache']['os'] = 'RedHat'
             elif osdata['ID'].lower() == 'centos':
                 DETAILS['grains_cache']['os'] = 'CentOS'
-            else
+            else:
                 DETAILS['grains_cache']['os'] = osdata['ID'].capitalize()
 
             if osdata.has_key('ID_LIKE'):
