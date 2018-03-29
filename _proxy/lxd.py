@@ -145,6 +145,7 @@ def grains():
     Get the grains from the proxied device
     '''
     log.debug('LXD-Proxy grains()')
+    DETAILS['container'].start()
 
     if not DETAILS['grains_cache']:
         DETAILS['grains_cache'] = {
@@ -197,7 +198,7 @@ def execute(command=[]):
     '''
     if ping() is False:
         init()
-    DETAILS['container'].start()
+        DETAILS['container'].start()
     ret, out, err = DETAILS['container'].execute(command)
     return out.split('\n')[0]
 
