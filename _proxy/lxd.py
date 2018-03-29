@@ -199,7 +199,12 @@ def execute(command=[]):
     if ping() is False:
         init()
         DETAILS['container'].start()
-    ret, out, err = DETAILS['container'].execute(command)
+    try:
+        ret, out, err = DETAILS['container'].execute(command)
+    except NotFound:
+        # Restart the connection and try again
+        DETAILS['container').start()
+        ret, out, err = DETAILS['container'].execute(command)
     return out.split('\n')[0]
 
 
