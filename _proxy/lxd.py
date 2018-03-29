@@ -275,7 +275,8 @@ def package_list():
 
     '''
     log.debug('LXD-Proxy: package_list()')
-    _, out, _ = sendline('dpkg --list')
+    # For now just return a list of packages without their version information
+    _, out, _ = sendline('dpkg-query -W -f "${Package}\n"')
     return out
 
 
