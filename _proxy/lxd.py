@@ -79,7 +79,6 @@ DETAILS = {}
 # Want logging!
 log = logging.getLogger(__file__)
 
-
 def __virtual__():
     '''
     Only return if all the modules are available
@@ -167,10 +166,10 @@ def grains():
                 # FIXME not every distro supports lsb_release
                 'os':           sendline('lsb_release -s -i'),
                 'osrelease':    sendline('lsb_release -s -r'),
-                'osfinger':     '%s-%s' % (GRAINS_CACHE['os'],
-                                           GRAINS_CACHE['osrelease']),
                 'oscodename':   sendline('lsb_release -s -c'),
         }
+        GRAINS_CACHE['osfinger'] = '%s-%s' % (GRAINS_CACHE['os'],
+                                              GRAINS_CACHE['osrelease'])
 
     # FIXME this would do better w/ some generator luvin...
     GRAINS_CACHE['ip_interfaces'] = {}
