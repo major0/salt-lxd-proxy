@@ -158,21 +158,40 @@ def grains():
                 # No need to query this stuff..
                 'username': 'root', 'uid': 0,
                 'groupname': 'root', 'gid': 0,
-
-                # FIXME not every distro supports lsb_release, and calling
-                # lsb_release multiple times is fairly slow... may be better to
-                # parse os-release and lsb-release, should they exist.
-                'os':           sendline('lsb_release -s -i'),
-                'osrelease':    sendline('lsb_release -s -r'),
-                'oscodename':   sendline('lsb_release -s -c'),
         }
-        DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
-                (DETAILS['grains_cache']['os'],
-                 DETAILS['grains_cache']['osrelease'])
-        DETAILS['grains_cache']['osrelease_info'] = \
-                DETAILS['grains_cache']['osrelease'].split('.')
-        DETAILS['grains_cache']['osmajorrelease'] = \
-                DETAILS['grains_cache']['osrelease_info'][0]
+
+        try:
+            osdata = DETAILS['container'].files.get('/etc/os-release')
+            osdata = dict(item.split('=') for item in shlex.split(osdata))
+
+            # Handle the special cases first
+            if osdata['ID'].lower() in ['redhat', 'rhel']:
+                DETAILS['grains_cache']['os'] = 'RedHat'
+            elif osdata['ID'].lower() == 'centos':
+                DETAILS['grains_cache']['os'] = 'CentOS'
+            else
+                DETAILS['grains_cache']['os'] = osdata['ID'].capitalize()
+
+            if osdata.has_key('ID_LIKE'):
+                DETAILS['grains_cache']['os_family'] = osdata['ID_LIKE'].capitalize()
+
+            # Not everyone sets the code-name, some hide it off in random other
+            # places (TODO)
+            if osdata.has_key('VERSION_CODENAME'):
+                DETAILS['grains_cache']['oscodename'] = osdata['VERSION_CODENAME']
+
+            # Everyone at least does this one correct .. right?
+            DETAILS['grains_cache']['osrelease'] = osdata['VERSION_ID']
+            DETAILS['grains_cache']['osfinger'] = '%s-%s' % \
+                    (DETAILS['grains_cache']['os'],
+                     DETAILS['grains_cache']['osrelease'])
+            DETAILS['grains_cache']['osrelease_info'] = \
+                    DETAILS['grains_cache']['osrelease'].split('.')
+            DETAILS['grains_cache']['osmajorrelease'] = \
+                    DETAILS['grains_cache']['osrelease_info'][0]
+
+        except NotFound:
+            log.error('Unsupported Linux distribution')
 
     # FIXME this would do better w/ some generator luvin...
     DETAILS['grains_cache']['ip_interfaces'] = {}
@@ -235,11 +254,8 @@ def ping():
     '''
     log.debug('LXD-Proxy ping()')
 
-    try:
-        if DETAILS['container'].status == 'Running':
-            return True
-    except ClientConnectionFailed as e:
-        log.error(e)
+    if DETAILS['container'].status == 'Running':
+        return True
     return False
 
 
