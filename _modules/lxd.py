@@ -38,11 +38,11 @@ def cmd(command, *args, **kwargs):
 
         salt '*' lxd.cmd sendline 'uptime'
     '''
-    proxy_prefix = __opts__['proxy']['proxytype']
+    proxy_prefix = __opts__['proxy']['proxytype']  # pylint: disable=locally-disabled, undefined-variable
     proxy_cmd = '.'.join([proxy_prefix, command])
-    if proxy_cmd not in __proxy__:
+    if proxy_cmd not in __proxy__: # pylint: disable=locally-disabled, undefined-variable
         return False
     for k in kwargs:
         if k.startswith('__pub_'):
             kwargs.pop(k)
-    return __proxy__[proxy_cmd](*args, **kwargs)
+    return __proxy__[proxy_cmd](*args, **kwargs) # pylint: disable=locally-disabled, undefined-variable

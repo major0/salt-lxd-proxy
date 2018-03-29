@@ -67,7 +67,7 @@ import shlex
 
 # Import LXD Libs
 from pylxd.client import Client
-from pylxd.exceptions import *
+from pylxd.exceptions import ClientConnectionFailed, LXDAPIException
 
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
@@ -75,7 +75,7 @@ __virtualname__ = 'lxd'
 DETAILS = {'grains_cache': {}}
 
 # Want logging!
-log = logging.getLogger(__file__)
+log = logging.getLogger(__file__) # pylint: disable=locally-disabled, invalid-name
 
 def __virtual__():
     '''
@@ -93,37 +93,38 @@ def init(opts=None):
     '''
     log.debug('LXD-Proxy Init')
 
-    if opts == None:
-        opts = __opts__
+    if opts is None:
+        opts = __opts__ # pylint: disable=locally-disabled, undefined-variable
 
     try:
         log.debug("LXD-Proxy Init: " \
-                "Client(endpoint='%s', cert='%s', key='%s')" % \
-                (opts['proxy']['url'],
-                 opts['proxy']['cert'],
-                 opts['proxy']['key']))
+                "Client(endpoint='" + opts['proxy']['url'] + "', " \
+                "cert='" + opts['proxy']['cert'] + "', " \
+                "key='" + opts['proxy']['key'] + "')")
         DETAILS['server'] = Client(endpoint=opts['proxy']['url'],
                                    cert=(opts['proxy']['cert'],
                                          opts['proxy']['key']),
                                    verify=opts['proxy']['verify'])
-    except ClientConnectionFailed as e:
+    except ClientConnectionFailed as err:
         log.debug('LXD-Proxy Init: Client() failed')
+        log.error(err)
         return False
 
     if not DETAILS['server'].trusted:
         # Don't log the password
         try:
             DETAILS['server'].authenticate(opts['proxy']['password'])
-        except LXDAPIException as e:
+        except LXDAPIException as err:
             log.debug('LXD-Proxy Init: authenticate() failed')
+            log.error(err)
             return False
 
     try:
-        log.debug('LXD-Proxy Init: container.get(name=%s)' % opts['proxy']['name'])
+        log.debug('LXD-Proxy Init: container.get(name=' + opts['proxy']['name'] + ')')
         DETAILS['container'] = DETAILS['server'].containers.get(opts['proxy']['name'])
-    except LXDAPIException as e:
+    except LXDAPIException as err:
         log.debug('LXD-Proxy Init: container.get() failed')
-        log.error(e)
+        log.error(err)
         return False
 
     log.debug('LXD-Proxy Init: Success')
@@ -149,15 +150,14 @@ def grains():
     if not DETAILS['grains_cache']:
         DETAILS['container'].start()
         DETAILS['grains_cache'] = {
-                # Collect information from the container object
-                'virtual':      'lxd',
-                'host':         DETAILS['container'].name,
-                'localhost':    DETAILS['container'].name,
-                #'cpuarch':      DETAILS['container'].architecture,
-
-                # No need to query this stuff..
-                'username': 'root', 'uid': 0,
-                'groupname': 'root', 'gid': 0,
+            # Collect information from the container object
+            'virtual':      'lxd',
+            'host':         DETAILS['container'].name,
+            'localhost':    DETAILS['container'].name,
+            'cpuarch':      DETAILS['container'].architecture,
+            # No need to query this stuff..
+            'username': 'root', 'uid': 0,
+            'groupname': 'root', 'gid': 0,
         }
 
         try:
@@ -176,7 +176,7 @@ def grains():
                 DETAILS['grains_cache']['os_family'] = osdata['ID_LIKE'].capitalize()
 
             # Not everyone sets the code-name, some hide it off in random other
-            # places (TODO)
+            # places
             if osdata.has_key('VERSION_CODENAME'):
                 DETAILS['grains_cache']['oscodename'] = osdata['VERSION_CODENAME']
 
@@ -190,17 +190,17 @@ def grains():
             DETAILS['grains_cache']['osmajorrelease'] = \
                     DETAILS['grains_cache']['osrelease_info'][0]
 
-        except NotFound:
+        except LXDAPIException:
             log.error('Unsupported Linux distribution')
 
-    # FIXME this would do better w/ some generator luvin...
+    # this would do better w/ some generator luvin...
     DETAILS['grains_cache']['ip_interfaces'] = {}
     DETAILS['grains_cache']['ip4_interfaces'] = {}
     DETAILS['grains_cache']['ip6_interfaces'] = {}
 
     for iface in DETAILS['container'].state().network.keys():
         DETAILS['grains_cache']['hwaddr_interfaces'] = \
-                { iface: DETAILS['container'].state().network[iface]['hwaddr'] }
+                {iface: DETAILS['container'].state().network[iface]['hwaddr']}
         DETAILS['grains_cache']['ip_interfaces'][iface] = []
         DETAILS['grains_cache']['ip4_interfaces'][iface] = []
         DETAILS['grains_cache']['ip6_interfaces'][iface] = []
@@ -214,7 +214,7 @@ def grains():
     return DETAILS['grains_cache']
 
 
-def execute(command=[]):
+def execute(command):
     '''
     Run a command within the container
     '''
@@ -222,11 +222,13 @@ def execute(command=[]):
         init()
         DETAILS['container'].start()
     try:
-        ret, out, err = DETAILS['container'].execute(command)
-    except NotFound:
+        _, out, _ = DETAILS['container'].execute(command)
+    except TypeError:
+        return None
+    except LXDAPIException:
         # Restart the connection and try again
         DETAILS['container'].start()
-        ret, out, err = DETAILS['container'].execute(command)
+        _, out, _ = DETAILS['container'].execute(command)
     return out.split('\n')[0]
 
 
@@ -234,7 +236,7 @@ def sendline(command):
     '''
     Run a command line within the container
     '''
-    log.debug('LXD-Proxy sendline(%s)' % command)
+    log.debug('LXD-Proxy sendline(' + command + ')')
     return execute(shlex.split(command))
 
 
@@ -259,7 +261,7 @@ def ping():
     return False
 
 
-def shutdown(opts):
+def shutdown(_=None):
     '''
     Disconnect
     '''
@@ -269,103 +271,78 @@ def shutdown(opts):
 
 def package_list():
     '''
-    List "packages" by executing a command via ssh
-    This function is called in response to the salt command
+    List installed packages
 
     ..code-block::bash
         salt target_minion pkg.list_pkgs
 
     '''
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline('pkg_list\n')
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: package_list()')
+    _, out, _ = sendline('dpkg --list')
+    return out
 
 
 def package_install(name, **kwargs):
     '''
     Install a "package" on the ssh server
     '''
-    cmd = 'pkg_install ' + name
+    log.debug('LXD-Proxy: package_install(' + name + ')')
+    cmd = 'apt install ' + name
     if kwargs.get('version', False):
-        cmd += ' ' + kwargs['version']
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+        cmd += '-' + kwargs['version']
+    _, out, _ = sendline(cmd)
+    return out
 
 
 def package_remove(name):
     '''
     Remove a "package" on the ssh server
     '''
-    cmd = 'pkg_remove ' + name
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: package_remove(' + name + ')')
+    _, out, _ = sendline('apt remove ' + name)
+    return out
 
 
 def service_list():
     '''
-    Start a "service" on the ssh server
+    List services in the container
 
-    .. versionadded:: 2015.8.2
+    .. versionadded:: 2018.3.29
     '''
-    cmd = 'ps'
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: service_list()')
+    # FIXME this needs some heavy parsing
+    _, out, _ = sendline('service status --status-all')
+    return out
 
 
 def service_start(name):
     '''
-    Start a "service" on the ssh server
+    Start a "service" in the container
 
-    .. versionadded:: 2015.8.2
+    .. versionadded:: 2018.3.29
     '''
-    cmd = 'start ' + name
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: service_start(' + name + ')')
+    _, out, _ = sendline('service start ' + name)
+    return out
 
 
 def service_stop(name):
     '''
-    Stop a "service" on the ssh server
+    Stop a "service" in the container
 
-    .. versionadded:: 2015.8.2
+    .. versionadded:: 2018.3.29
     '''
-    cmd = 'stop ' + name
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: service_stop(' + name + ')')
+    _, out, _ = sendline('service stop ' + name)
+    return out
 
 
 def service_restart(name):
     '''
     Restart a "service" on the ssh server
 
-    .. versionadded:: 2015.8.2
+    .. versionadded:: 2018.3.29
     '''
-    cmd = 'restart ' + name
-
-    # Send the command to execute
-    out, err = DETAILS['server'].sendline(cmd)
-
-    # "scrape" the output and return the right fields as a dict
-    return parse(out)
+    log.debug('LXD-Proxy: service_restart(' + name + ')')
+    _, out, _ = sendline('service restart ' + name)
+    return out
