@@ -181,7 +181,7 @@ def sendline(command):
         # can be hit w/ any command that takes more than 5 seconds to run.
         DETAILS['container'].start()
         _, out, _ = DETAILS['container'].execute(shlex.split(command))
-    return out.split('\n')[0]
+    return out
 
 
 def grains():
