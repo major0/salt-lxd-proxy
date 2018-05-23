@@ -287,7 +287,7 @@ def package_install(name, **kwargs):
     log.debug('LXD-Proxy: package_install(' + name + ')')
     cmd = 'apt install ' + name
     if kwargs.get('version', False):
-        cmd += '-' + kwargs['version']
+        cmd += ' =' + kwargs['version']
     _, out, _ = sendline(cmd)
     return out
 
