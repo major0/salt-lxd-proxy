@@ -291,6 +291,18 @@ def package_install(name, **kwargs):
     _, out, _ = sendline(cmd)
     return out
 
+def package_upgrade(name=None, **kwargs):
+    '''
+    Upgrade an existing "package" in the container
+    '''
+    log.debug('LXD-Proxy: package_upgrade(' + name + ')')
+    cmd = 'apt upgrade '
+    if name:
+        cmd += name
+    if kwargs.get('version', False):
+        cmd += ' =' + kwargs['version']
+    _, out, _ = sendline(cmd)
+    return out
 
 def package_remove(name):
     '''
