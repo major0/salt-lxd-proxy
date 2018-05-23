@@ -282,7 +282,7 @@ def package_list():
 
 def package_install(name, **kwargs):
     '''
-    Install a "package" on the ssh server
+    Install a "package" into the container
     '''
     log.debug('LXD-Proxy: package_install(' + name + ')')
     cmd = 'apt install ' + name
@@ -294,7 +294,7 @@ def package_install(name, **kwargs):
 
 def package_remove(name):
     '''
-    Remove a "package" on the ssh server
+    Remove a "package" from the lxd container
     '''
     log.debug('LXD-Proxy: package_remove(' + name + ')')
     _, out, _ = sendline('apt remove ' + name)
@@ -337,7 +337,7 @@ def service_stop(name):
 
 def service_restart(name):
     '''
-    Restart a "service" on the ssh server
+    Restart a "service" in the container
 
     .. versionadded:: 2018.3.29
     '''
