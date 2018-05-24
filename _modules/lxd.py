@@ -15,7 +15,7 @@ __proxyenabled__ = ['lxd']
 __virtualname__ = 'lxd'
 
 def __virtual__():
-    if salt.utils.is_proxy():
+    if salt.utils.platform.is_proxy():
         return __virtualname__
     return (False, 'The lxd execution module failed to load: '
                    'only available on proxy minions.')
