@@ -12,21 +12,27 @@ container to monitor/manage.
 Currently the LXD Proxy Minion only supports contacting the LXD server and
 collecting grains information about the target container.
 
-TODO
-----
-To satisfy the basics of the example proxy API we need to support at minimum
-the following:
+In Progress
+-----------
+Satisfying the basics:
  - services
  - packages
 
-Management of these would also be useful.
+TODO
+----
  - users
  - mounts
  - files
 
+Thoughts
+--------
 Likely much of this functionality would be better handled as a separate lxd
 container runtime module which abstracted these interfaces as opposed to
 attempting to support them all w/in the proxy itself.
+
+It is worth noting that the vast majority of this project would be made
+obsolete by rewriting salt-ssh to support connection methods "other" than ssh
+(telnet+ssl, telnet-gssapi, rsh, 'lxc exec', winrm, etc).
 
 See Also
 --------

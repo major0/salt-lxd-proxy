@@ -73,8 +73,10 @@ except ImportError:
     from pylxd.exceptions import ClientConnectionFailed, LXDAPIException
     NotFound = LXDAPIException
 
+
 # Want logging!
 log = logging.getLogger(__file__) # pylint: disable=locally-disabled, invalid-name
+
 
 # This must be present or the Salt loader won't load this module
 __proxyenabled__ = ['lxd']
@@ -155,7 +157,6 @@ def ping():
     if DETAILS['container'].status == 'Running':
         return True
     return False
-
 
 
 def shutdown(_=None):
@@ -291,6 +292,7 @@ def package_install(name, **kwargs):
     _, out, _ = sendline(cmd)
     return out
 
+
 def package_upgrade(name=None, **kwargs):
     '''
     Upgrade an existing "package" in the container
@@ -303,6 +305,7 @@ def package_upgrade(name=None, **kwargs):
         cmd += ' =' + kwargs['version']
     _, out, _ = sendline(cmd)
     return out
+
 
 def package_remove(name):
     '''
