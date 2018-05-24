@@ -159,7 +159,7 @@ def ping():
     return False
 
 
-def shutdown(_=None):
+def shutdown(_=None): # pylint: disable=locally-disabled,unused-argument,invalid-name
     '''
     Disconnect
     '''
@@ -175,7 +175,7 @@ def sendline(command):
         init()
         DETAILS['container'].start()
     try:
-        _, out, _ = DETAILS['container'].execute(shlex.split(command))
+        _, out, _ = DETAILS['container'].execute(shlex.split(command)) # pylint: disable=locally-disabled,unused-argument,invalid-name
         return None
     except NotFound:
         # This is a work-around for a race-condition in the LXC library that
@@ -277,8 +277,7 @@ def package_list():
     '''
     log.debug('LXD-Proxy: package_list()')
     # For now just return a list of packages without their version information
-    _, out, _ = sendline('dpkg-query -W -f "${Package}\n"')
-    return out
+    return sendline('dpkg-query -W -f "${Package}\n"')
 
 
 def package_install(name, **kwargs):
@@ -289,8 +288,7 @@ def package_install(name, **kwargs):
     cmd = 'apt install ' + name
     if kwargs.get('version', False):
         cmd += ' =' + kwargs['version']
-    _, out, _ = sendline(cmd)
-    return out
+    return sendline(cmd)
 
 
 def package_upgrade(name=None, **kwargs):
@@ -303,8 +301,7 @@ def package_upgrade(name=None, **kwargs):
         cmd += name
     if kwargs.get('version', False):
         cmd += ' =' + kwargs['version']
-    _, out, _ = sendline(cmd)
-    return out
+    return sendline(cmd)
 
 
 def package_remove(name):
@@ -312,8 +309,7 @@ def package_remove(name):
     Remove a "package" from the lxd container
     '''
     log.debug('LXD-Proxy: package_remove(' + name + ')')
-    _, out, _ = sendline('apt remove ' + name)
-    return out
+    return sendline('apt remove ' + name)
 
 
 def service_list():
@@ -324,8 +320,7 @@ def service_list():
     '''
     log.debug('LXD-Proxy: service_list()')
     # FIXME this needs some heavy parsing
-    _, out, _ = sendline('service status --status-all')
-    return out
+    return sendline('service status --status-all')
 
 
 def service_start(name):
@@ -335,8 +330,7 @@ def service_start(name):
     .. versionadded:: 2018.3.29
     '''
     log.debug('LXD-Proxy: service_start(' + name + ')')
-    _, out, _ = sendline('service start ' + name)
-    return out
+    return sendline('service start ' + name)
 
 
 def service_stop(name):
@@ -346,8 +340,7 @@ def service_stop(name):
     .. versionadded:: 2018.3.29
     '''
     log.debug('LXD-Proxy: service_stop(' + name + ')')
-    _, out, _ = sendline('service stop ' + name)
-    return out
+    return sendline('service stop ' + name)
 
 
 def service_restart(name):
@@ -357,5 +350,4 @@ def service_restart(name):
     .. versionadded:: 2018.3.29
     '''
     log.debug('LXD-Proxy: service_restart(' + name + ')')
-    _, out, _ = sendline('service restart ' + name)
-    return out
+    return sendline('service restart ' + name)
